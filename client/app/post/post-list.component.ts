@@ -8,23 +8,24 @@ import gql from 'graphql-tag';
   selector: 'app-post-list',
   template: `
     <ul>
-      <li *ngFor="let post of posts | async | select: 'posts'">
+      <li *ngFor="let post of posts">
         {{post.title}} by {{post.author.firstName}} {{post.author.lastName}}
         ({{post.votes}} votes)
-        <app-post-upvoter [postId]="post.id"></app-post-upvoter>
+        <app-post-upvoter [postId]="post.id" (onVote)="refresh()"></app-post-upvoter>
       </li>
     </ul>
   `
 })
 export class PostListComponent implements OnInit {
-  posts: ApolloQueryObservable<ApolloQueryResult>;
+  posts: any[] = [];
+  postsObs: ApolloQueryObservable<ApolloQueryResult>;
   
   constructor(
     private apollo: Angular2Apollo
   ) {}
 
   ngOnInit() {
-    this.posts = this.apollo.watchQuery({
+    this.postsObs = this.apollo.watchQuery({
       query: gql`
         query allPosts {
           posts {
@@ -40,5 +41,14 @@ export class PostListComponent implements OnInit {
         }
       `,
     });
+    
+    this.postsObs.subscribe(({data}) => {
+      this.posts = data.posts;
+      console.log('sub', data);
+    });
+  }
+
+  refresh() {
+    this.postsObs.refetch();
   }
 }
